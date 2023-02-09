@@ -2,8 +2,6 @@
 nextflow.enable.dsl=2
 
 
-reads_ch = Channel.fromPath([params.reads + '/*.fastq', params.reads + '/*.fastq.gz', params.reads + '/*.fq.gz'])
-
 process minimapMapping{
     
     input:
@@ -17,9 +15,7 @@ process minimapMapping{
     script:
     sample_base = sample.getSimpleName()
 
-    """
-    minimap2 -ax map-pb --MD "${reference}" "${sample}" > "${sample_base}".bam
-    """
+    template 'minima2.bash'
 }
 
 
@@ -33,10 +29,7 @@ process transcriptClean {
     path("${sample_base}_clean.sam")
 
     script:
-
-    """
-    python /usr/local/bin/TranscriptClean.py --sam "${sam}" --genome "${reference}" --outprefix "${sample_base}"
-    """
+    template 'transcriptClean.bash'
 }
 
 process initiateDatabase {
@@ -53,10 +46,7 @@ process initiateDatabase {
     path("talon.db")
 
     script:
-
-    """
-        talon_initialize_database --f "${annotation}" --a "${annot_name}" --g "${build}"  --o "talon"
-    """
+    template 'initDatabase.bash'
 }
 
 process talonLabelReads {
@@ -71,10 +61,7 @@ process talonLabelReads {
     val("${sample_base}"), emit: sample_base
 
     script:
-
-    """
-    talon_label_reads --f "${sample}" --g "${reference}" --t 1 --ar 20 --deleteTmp --o "${sample_base}"
-    """
+    template 'readLabel.bash'
 
 }
 
@@ -108,9 +95,7 @@ process annotator {
     path("results_QC.log")
 
     script:
-    """   
-    talon  --f "${config}" --db "${database}" --build "${build}" --o results
-    """
+    template 'talonAnnotate.bash'
 }
 
 process sampleList {
@@ -136,9 +121,7 @@ process talonSummarize {
     path("results*")
 
     script:
-    """
-    talon_summarize --db "${database}" --v --o "results"
-    """
+    template 'talonSummarise.bash'
 }
 
 process talonFilterTranscripts {
@@ -152,10 +135,7 @@ process talonFilterTranscripts {
     path("filtered_transcripts.csv")
 
     script:
-    """
-    talon_filter_transcripts --db "${database}" --datasets "${datasets}" -a "${annot_name}" --maxFracA 0.5  --minCount 5  --minDatasets 2 --o filtered_transcripts.csv
-
-    """
+    template 'talonTranscriptFilter.bash'
 }
 
 process transcriptAbundance{
@@ -174,10 +154,7 @@ process transcriptAbundance{
     path("results*")
 
     script:
-
-    """
-    talon_abundance --db "${database}" --whitelist "${wishList}"  -a "${annot_name}" --build "${build}" --o "results"
-    """
+    template 'talonAbundance.bash'
 
 }
 
@@ -193,9 +170,9 @@ process createGtf {
     output:
     path("results*")
 
-    """
-    talon_create_GTF --db "${database}" -a "${annot_name}" --build "${build}" --o results
-    """
+    script:
+    template 'talonGtf.bash'
+    
 }
 
 process exctarctBysample{
@@ -212,29 +189,33 @@ process exctarctBysample{
     subset_by_sample.py "${readCounts}"
     """
 }
-workflow{
-    bam = minimapMapping(params.reference, reads_ch)
-    cleanBam = transcriptClean(bam.bam,params.reference, bam.sampleID)
+workflow longRna {
+    take: 
+        reads_ch
 
-   database = initiateDatabase(params.referenceAnnotation, params.annotationName, params.build)
-  
-    label_reads = talonLabelReads(cleanBam, params.reference, bam.sampleID)
- 
-    samfiles = label_reads.samFiles.collect()
-    samplesNames = label_reads.sample_base.collect()
-    config = genrateConfig(samplesNames, params.build, params.platform, samfiles) 
+    main:
+        bam = minimapMapping(params.reference, reads_ch)
+        cleanBam = transcriptClean(bam.bam,params.reference, bam.sampleID)
 
-    annotation = annotator(config.config_file, database, params.build)
- 
-    names_from_annotation = sampleList(annotation.tsv_results)
-    talon_summary = talonSummarize(database, annotation.tsv_results)
+        database = initiateDatabase(params.referenceAnnotation, params.annotationName, params.build)
+    
+        label_reads = talonLabelReads(cleanBam, params.reference, bam.sampleID)
+    
+        samfiles = label_reads.samFiles.collect()
+        samplesNames = label_reads.sample_base.collect()
+        config = genrateConfig(samplesNames, params.build, params.platform, samfiles) 
 
-    filtered = talonFilterTranscripts(database, names_from_annotation, params.annotationName) 
+        annotation = annotator(config.config_file, database, params.build)
 
-    abundance =  transcriptAbundance(database, filtered, params.annotationName, params.build, annotation.tsv_results)
+        names_from_annotation = sampleList(annotation.tsv_results)
+        talon_summary = talonSummarize(database, annotation.tsv_results)
 
-    gtf = createGtf(database, params.annotationName, params.build)
-    subsetCount = exctarctBysample(abundance)
+        filtered = talonFilterTranscripts(database, names_from_annotation, params.annotationName) 
+
+        abundance =  transcriptAbundance(database, filtered, params.annotationName, params.build, annotation.tsv_results)
+
+        gtf = createGtf(database, params.annotationName, params.build)
+        subsetCount = exctarctBysample(abundance)
 
 }
 
