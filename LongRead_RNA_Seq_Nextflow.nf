@@ -11,7 +11,8 @@ process minimapMapping{
     path(sample)
 
     output:
-    path("*bam")
+    path("*bam"), emit: bam
+    val("${sample_base}"), emit: sampleID
 
     script:
     sample_base = sample.getSimpleName()
@@ -24,15 +25,17 @@ process minimapMapping{
 
 process transcriptClean {
     input:
-    val(x)
+    path(sam)
+    path(reference)
+    val(sample_base)
 
     output:
-    stdout
+    path("${sample_base}_clean.sam")
 
     script:
 
     """
-    python3 /usr/local/bin/TranscriptClean.py
+    python /usr/local/bin/TranscriptClean.py --sam "${sam}" --genome "${reference}" --outprefix "${sample_base}"
     """
 }
 
@@ -57,20 +60,17 @@ process initiateDatabase {
 }
 
 process talonLabelReads {
-    //container = 'talon'
-
-    publishDir "${params.results}", mode: 'copy'
 
     input:
     path(sample)
     path(reference)
+    val(sample_base)
 
     output:
     path("${sample_base}*.sam"), emit: samFiles
     val("${sample_base}"), emit: sample_base
 
     script:
-    sample_base = sample.getSimpleName()
 
     """
     talon_label_reads --f "${sample}" --g "${reference}" --t 1 --ar 20 --deleteTmp --o "${sample_base}"
@@ -214,12 +214,12 @@ process exctarctBysample{
 }
 workflow{
     bam = minimapMapping(params.reference, reads_ch)
-    //transcriptClean("xx")
-    
-    database = initiateDatabase(params.referenceAnnotation, params.annotationName, params.build)
+    cleanBam = transcriptClean(bam.bam,params.reference, bam.sampleID)
+
+   database = initiateDatabase(params.referenceAnnotation, params.annotationName, params.build)
   
-    label_reads = talonLabelReads(bam, params.reference)
-   
+    label_reads = talonLabelReads(cleanBam, params.reference, bam.sampleID)
+ 
     samfiles = label_reads.samFiles.collect()
     samplesNames = label_reads.sample_base.collect()
     config = genrateConfig(samplesNames, params.build, params.platform, samfiles) 
@@ -235,7 +235,6 @@ workflow{
 
     gtf = createGtf(database, params.annotationName, params.build)
     subsetCount = exctarctBysample(abundance)
-   
 
 }
 
