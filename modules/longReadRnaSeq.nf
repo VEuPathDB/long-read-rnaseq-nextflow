@@ -158,6 +158,24 @@ process transcriptAbundance{
 
 }
 
+process transcriptAbundanceNoFilter{
+
+    publishDir "${params.results}/counts", mode: 'copy'
+
+    input:
+    path(database)
+    val(annot_name)
+    val(build)
+    path("results*")
+
+
+    output:
+    path("results*")
+
+    script:
+    template 'talonAbundanceNoFilter.bash'
+
+}
 process createGtf {
 
     publishDir "${params.results}/Gtf", mode: 'copy'
@@ -199,20 +217,21 @@ workflow longRna {
 
         database = initiateDatabase(params.referenceAnnotation, params.annotationName, params.build)
     
-        label_reads = talonLabelReads(cleanBam, params.reference, bam.sampleID)
+        labelReads = talonLabelReads(cleanBam, params.reference, bam.sampleID)
     
-        samfiles = label_reads.samFiles.collect()
-        samplesNames = label_reads.sample_base.collect()
+        samfiles = labelReads.samFiles.collect()
+        samplesNames = labelReads.sample_base.collect()
         config = genrateConfig(samplesNames, params.build, params.platform, samfiles) 
 
         annotation = annotator(config.config_file, database, params.build)
 
-        names_from_annotation = sampleList(annotation.tsv_results)
-        talon_summary = talonSummarize(database, annotation.tsv_results)
+        namesFromAnnotation = sampleList(annotation.tsv_results)
+        talonSummary = talonSummarize(database, annotation.tsv_results)
 
-        filtered = talonFilterTranscripts(database, names_from_annotation, params.annotationName) 
+        filtered = talonFilterTranscripts(database, namesFromAnnotation, params.annotationName) 
 
         abundance =  transcriptAbundance(database, filtered, params.annotationName, params.build, annotation.tsv_results)
+        abundanceNoFilter = transcriptAbundanceNoFilter(database, params.annotationName, params.build, annotation.tsv_results)
 
         gtf = createGtf(database, params.annotationName, params.build)
         subsetCount = exctarctBysample(abundance)
