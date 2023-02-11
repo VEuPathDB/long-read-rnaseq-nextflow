@@ -197,14 +197,15 @@ process exctarctBysample{
     publishDir "${params.results}/counts", mode: 'copy'
 
     input:
-    path(readCounts)
+    path(unFilteredCounts)
+    path(filteredCounts)
 
     output:
     path("*tsv")
 
     script:
     """
-    subset_by_sample.py "${readCounts}"
+    subset_by_sample.py "${unFilteredCounts}" "${filteredCounts}"
     """
 }
 workflow longRna {
@@ -231,11 +232,11 @@ workflow longRna {
 
         filtered = talonFilterTranscripts(database, namesFromAnnotation, params.annotationName) 
 
-        abundance =  transcriptAbundance(database, filtered, params.annotationName, params.build, annotation.tsv_results)
         abundanceNoFilter = transcriptAbundanceNoFilter(database, params.annotationName, params.build, annotation.tsv_results)
+        abundanceFilter =  transcriptAbundance(database, filtered, params.annotationName, params.build, annotation.tsv_results)
 
         gtf = createGtf(database, params.annotationName, params.build)
-        subsetCount = exctarctBysample(abundance)
+        subsetCount = exctarctBysample(abundanceNoFilter, abundanceFilter )
 
 }
 
