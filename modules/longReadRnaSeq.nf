@@ -225,7 +225,6 @@ workflow longRna {
         config = genrateConfig(samplesNames, params.build, params.platform, samfiles) 
 
         annotation = annotator(config.config_file, database, params.build)
-        annotation.tsv_results.view()
 
         namesFromAnnotation = sampleList(annotation.tsv_results)
         talonSummary = talonSummarize(database, annotation.tsv_results)
