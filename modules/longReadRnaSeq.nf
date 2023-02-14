@@ -3,6 +3,7 @@ nextflow.enable.dsl=2
 
 
 process minimapMapping{
+    publishDir "${params.results}/bam", mode: 'copy'
     
     input:
     path(reference)
@@ -17,7 +18,6 @@ process minimapMapping{
 
     template 'minima2.bash'
 }
-
 
 process transcriptClean {
     input:
@@ -34,7 +34,7 @@ process transcriptClean {
 
 process initiateDatabase {
 
-    publishDir "${params.results}/database", mode: 'copy'
+    publishDir "$projectDir/database", mode: 'copy'
 
     input: 
     path(annotation)
@@ -85,6 +85,7 @@ process genrateConfig {
 }
 process annotator {
 
+    
     input:
     path(config)
     path(database)
@@ -181,6 +182,7 @@ process createGtf {
     publishDir "${params.results}/Gtf", mode: 'copy'
 
     input:
+    path(annotOut)
     path(database)
     val(annot_name)
     val(build)
@@ -214,27 +216,30 @@ workflow longRna {
 
     main:
         bam = minimapMapping(params.reference, reads_ch)
+        bam.bam.view()
+        bam.sampleID.view()
+    
         cleanBam = transcriptClean(bam.bam,params.reference, bam.sampleID)
 
         database = initiateDatabase(params.referenceAnnotation, params.annotationName, params.build)
-    
+  
         labelReads = talonLabelReads(cleanBam, params.reference, bam.sampleID)
     
         samfiles = labelReads.samFiles.collect()
         samplesNames = labelReads.sample_base.collect()
         config = genrateConfig(samplesNames, params.build, params.platform, samfiles) 
 
-        annotation = annotator(config.config_file, database, params.build)
+        annotation = annotator(config.config_file, params.database, params.build)
 
         namesFromAnnotation = sampleList(annotation.tsv_results)
-        talonSummary = talonSummarize(database, annotation.tsv_results)
+        talonSummary = talonSummarize(params.database, annotation.tsv_results)
 
-        filtered = talonFilterTranscripts(database, namesFromAnnotation, params.annotationName) 
+        filtered = talonFilterTranscripts(params.database, namesFromAnnotation, params.annotationName) 
 
-        abundanceNoFilter = transcriptAbundanceNoFilter(database, params.annotationName, params.build, annotation.tsv_results)
-        abundanceFilter =  transcriptAbundance(database, filtered, params.annotationName, params.build, annotation.tsv_results)
+        abundanceNoFilter = transcriptAbundanceNoFilter(params.database, params.annotationName, params.build, annotation.tsv_results)
+        abundanceFilter =  transcriptAbundance(params.database, filtered, params.annotationName, params.build, annotation.tsv_results)
 
-        gtf = createGtf(database, params.annotationName, params.build)
+        gtf = createGtf(annotation.tsv_results, database, params.annotationName, params.build)
         subsetCount = exctarctBysample(abundanceNoFilter, abundanceFilter )
 
 }
