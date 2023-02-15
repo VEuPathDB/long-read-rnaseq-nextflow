@@ -3,6 +3,7 @@ nextflow.enable.dsl=2
 
 
 process minimapMapping{
+    container = 'staphb/minimap2'
     publishDir "${params.results}/bam", mode: 'copy'
     
     input:
@@ -20,6 +21,8 @@ process minimapMapping{
 }
 
 process transcriptClean {
+    container = 'talon1'
+
     input:
     path(sam)
     path(reference)
@@ -33,6 +36,7 @@ process transcriptClean {
 }
 
 process initiateDatabase {
+    container = 'talon1'
 
     publishDir "$projectDir/database", mode: 'copy'
 
@@ -43,13 +47,16 @@ process initiateDatabase {
    
 
     output:
-    path("talon.db")
+    path("talon.db"), emit: db
+    val(annot_name), emit: db_name
 
     script:
     template 'initDatabase.bash'
 }
 
 process talonLabelReads {
+
+    container = 'talon1'
 
     input:
     path(sample)
@@ -66,6 +73,8 @@ process talonLabelReads {
 }
 
 process genrateConfig {
+
+    container = 'talon1'
 
     input:
     val(samID)
@@ -85,11 +94,13 @@ process genrateConfig {
 }
 process annotator {
 
+    container = 'talon1'
     
     input:
     path(config)
     path(database)
     val(build)
+    val(annot_name)
 
     output:
     path("results_talon_read_annot.tsv"), emit: tsv_results
@@ -100,6 +111,9 @@ process annotator {
 }
 
 process sampleList {
+
+    container = 'talon1'
+
     input:
     path(annotation)
 
@@ -114,6 +128,8 @@ process sampleList {
 
 process talonSummarize {
 
+    container = 'talon1'
+
     input:
     path(database)
     path("results")
@@ -126,6 +142,8 @@ process talonSummarize {
 }
 
 process talonFilterTranscripts {
+
+    container = 'talon1'
 
     input:
     path(database)
@@ -140,6 +158,8 @@ process talonFilterTranscripts {
 }
 
 process transcriptAbundance{
+
+    container = 'talon1'
 
     publishDir "${params.results}/counts", mode: 'copy'
 
@@ -161,6 +181,8 @@ process transcriptAbundance{
 
 process transcriptAbundanceNoFilter{
 
+    container = 'talon1'
+
     publishDir "${params.results}/counts", mode: 'copy'
 
     input:
@@ -179,6 +201,8 @@ process transcriptAbundanceNoFilter{
 }
 process createGtf {
 
+    container = 'talon1'
+
     publishDir "${params.results}/Gtf", mode: 'copy'
 
     input:
@@ -196,6 +220,9 @@ process createGtf {
 }
 
 process exctarctBysample{
+
+    container = 'talon1'
+    
     publishDir "${params.results}/counts", mode: 'copy'
 
     input:
@@ -229,7 +256,7 @@ workflow longRna {
         samplesNames = labelReads.sample_base.collect()
         config = genrateConfig(samplesNames, params.build, params.platform, samfiles) 
 
-        annotation = annotator(config.config_file, params.database, params.build)
+        annotation = annotator(config.config_file, params.database, params.build, database.db_name)
 
         namesFromAnnotation = sampleList(annotation.tsv_results)
         talonSummary = talonSummarize(params.database, annotation.tsv_results)
@@ -239,8 +266,7 @@ workflow longRna {
         abundanceNoFilter = transcriptAbundanceNoFilter(params.database, params.annotationName, params.build, annotation.tsv_results)
         abundanceFilter =  transcriptAbundance(params.database, filtered, params.annotationName, params.build, annotation.tsv_results)
 
-        gtf = createGtf(annotation.tsv_results, database, params.annotationName, params.build)
+        gtf = createGtf(annotation.tsv_results, params.database, params.annotationName, params.build)
         subsetCount = exctarctBysample(abundanceNoFilter, abundanceFilter )
 
 }
-
