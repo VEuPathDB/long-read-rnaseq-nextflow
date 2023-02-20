@@ -39,12 +39,16 @@ if(!params.results) {
   }
 
 
-reads_ch = Channel.fromPath([params.reads + '/*.fastq', params.reads + '/*.fastq.gz', params.reads + '/*.fq.gz'])
+//sample_ch = Channel.fromPath([params.reads + '/*.fastq', params.reads + '/*.fastq.gz', params.reads + '/*.fq.gz'])
+
+sample_ch =   Channel
+    .fromPath("$projectDir/data/Toxo/fastq/*fastq")
+    .splitFastq( by : 100, file:true  )
 
 //--------------------------------------
 // Process the workflow
 //-------------------------------------
 
 workflow {
-    longRna(reads_ch)
+    longRna(sample_ch)
 }

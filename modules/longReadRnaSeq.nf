@@ -4,20 +4,51 @@ nextflow.enable.dsl=2
 
 process minimapMapping{
     container = 'staphb/minimap2'
-    publishDir "${params.results}/bam", mode: 'copy'
     
     input:
     path(reference)
     path(sample)
 
     output:
-    path("*bam"), emit: bam
-    val("${sample_base}"), emit: sampleID
+    path("*sam") 
 
     script:
     sample_base = sample.getSimpleName()
 
     template 'minima2.bash'
+
+}
+
+process sortSam {
+    input:
+    path(sam)
+
+    output:
+    tuple val("${sample_base}"), path("*sam")
+
+    script:
+    split_name = sam.getBaseName()
+    sample_base = sam.getSimpleName()
+
+    template 'samSorting.bash'
+    
+}
+
+process mergeSams {
+
+    publishDir "${params.results}/sam", mode: 'copy'
+
+    input:
+    tuple val(sampleID), path("*.sam")
+
+    output:
+    path("${sampleID}.sam"), emit: sam
+    val(sampleID), emit: sampleID
+
+    script:
+
+    template 'samMerge.bash'
+    
 }
 
 process transcriptClean {
@@ -239,18 +270,21 @@ process exctarctBysample{
 }
 workflow longRna {
     take: 
-        reads_ch
+        sample_ch
 
     main:
-        bam = minimapMapping(params.reference, reads_ch)
-        bam.bam.view()
-        bam.sampleID.view()
+        sam =  minimapMapping(params.reference, sample_ch)
+        sortedsam = sortSam(sam)
+
+        samSet = sortedsam.groupTuple(sort: true)
     
-        cleanBam = transcriptClean(bam.bam,params.reference, bam.sampleID)
+        mergeSam = mergeSams(samSet)
+    
+        cleanSam = transcriptClean(mergeSam.sam,params.reference, mergeSam.sampleID)
 
         database = initiateDatabase(params.referenceAnnotation, params.annotationName, params.build)
-  
-        labelReads = talonLabelReads(cleanBam, params.reference, bam.sampleID)
+
+        labelReads = talonLabelReads(cleanSam, params.reference, mergeSam.sampleID)
     
         samfiles = labelReads.samFiles.collect()
         samplesNames = labelReads.sample_base.collect()
