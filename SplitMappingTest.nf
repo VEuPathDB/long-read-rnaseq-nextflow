@@ -3,12 +3,13 @@ nextflow.enable.dsl=2
 
 sample_ch =   Channel
     .fromPath("$projectDir/data/Toxo/fastq/*fastq")
-    .splitFastq( by : 100, file:true  )
+    //.splitFastq( by : 100, file:true  )
 
-
+sample_ch.view()
 paired_ch = Channel
     .fromFilePairs('/Users/saikouybah/Documents/RNA_Seq_Nexflow/data/Fastq/*_{1,2}.fq.gz', flat: true)
-    .splitFastq(by: 100_000, pe: true, file: true)
+    //.splitFastq(by: 100_000, pe: true, file: true)
+paired_ch.view()
 
 params.reference1="/Users/saikouybah/Documents/RNA_Seq_Nexflow/data/Reference/pfal3D7_chr1.fasta"
 
@@ -104,11 +105,11 @@ process mergesams {
 
 workflow{
     sam =  minimapMapping1(params.reference, sample_ch)
-    sortedsam = sortSam(sam)
+    //sortedsam = sortSam(sam)
     //sortedsam.view()
-    samSet = sortedsam.groupTuple(sort: true)
-    samSet.view()
-    mergeSam = mergesams(samSet)
+    //samSet = sortedsam.groupTuple(sort: true)
+    //samSet.view()
+    //mergeSam = mergesams(samSet)
    //-------
     //index_ch = hisat2Index(params.reference1)
     //index_ch.ht2_files.view()
