@@ -20,6 +20,7 @@ process minimapMapping{
 }
 
 process sortSam {
+    container = 'talon1'
     input:
     path(sam)
 
@@ -35,15 +36,17 @@ process sortSam {
 }
 
 process mergeSams {
-
-    publishDir "${params.results}/sam", mode: 'copy'
+    container = 'talon1'
+    publishDir "${params.results}/bam", pattern: "*.bam",  mode: 'copy'
 
     input:
     tuple val(sampleID), path("*.sam")
+    
 
     output:
     path("${sampleID}.sam"), emit: sam
     val(sampleID), emit: sampleID
+    path("*bam"), emit: bam
 
     script:
 
