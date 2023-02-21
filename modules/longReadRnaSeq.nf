@@ -81,7 +81,7 @@ process initiateDatabase {
    
 
     output:
-    path("talon.db"), emit: db
+    path("*talon.db"), emit: db
     val(annot_name), emit: db_name
 
     script:
@@ -246,7 +246,7 @@ process createGtf {
     val(build)
 
     output:
-    path("results*")
+    path("*results*")
 
     script:
     template 'talonGtf.bash'
@@ -286,6 +286,7 @@ workflow longRna {
         cleanSam = transcriptClean(mergeSam.sam,params.reference, mergeSam.sampleID)
 
         database = initiateDatabase(params.referenceAnnotation, params.annotationName, params.build)
+        database.db.view()
 
         labelReads = talonLabelReads(cleanSam, params.reference, mergeSam.sampleID)
     
