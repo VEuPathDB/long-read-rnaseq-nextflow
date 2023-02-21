@@ -40,7 +40,7 @@ if(!params.results) {
 
 
 sample_ch =   Channel
-    .fromPath("$projectDir/data/Toxo/fastq/*fastq")
+    .fromPath(params.reads)
     .splitFastq( by : params.splitChunk, file:true  )
 
 //--------------------------------------
