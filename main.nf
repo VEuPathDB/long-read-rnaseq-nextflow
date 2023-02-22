@@ -1,4 +1,17 @@
 #!/usr/bin/env nextflow
+import nextflow.splitter.CsvSplitter
+
+def fetchRunAccessions( tsv ) {
+    def splitter = new CsvSplitter().options( header:true, sep:'\t' )
+    def reader = new BufferedReader( new FileReader( tsv ) )
+    splitter.parseHeader( reader )
+    List<String> run_accessions = []
+    Map<String,String> row
+    while( row = splitter.fetchRecord( reader ) ) {
+       run_accessions.add( row['run_accession'] )
+    }
+    return run_accessions
+}
 
 //---------------------------------------
 // include the RNA seq workflow
@@ -38,11 +51,14 @@ if(!params.results) {
     throw new Exception("Missing parameter params.results")
   }
 
-
-sample_ch =   Channel
-    .fromPath(params.reads)
-    .splitFastq( by : params.splitChunk, file:true  )
-
+if (params.local){
+    sample_ch =   Channel
+      .fromPath(params.reads)
+      .splitFastq( by : params.splitChunk, file:true  )
+} else {
+    input = fetchRunAccessions(params.sraAccession)
+    sample_ch = Channel.fromList(input)
+}
 //--------------------------------------
 // Process the workflow
 //-------------------------------------

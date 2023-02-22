@@ -1,6 +1,21 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
+process downloadSRA {
+    input:
+    val(sra)
+
+    output:
+    path("${sra}*")
+
+    script:
+
+    """
+    fastq-dump ${sra}
+    """
+
+
+}
 
 process minimapMapping{
     container = 'staphb/minimap2'
@@ -276,7 +291,15 @@ workflow longRna {
         sample_ch
 
     main:
+        if (params.local) {
         sam =  minimapMapping(params.reference, sample_ch)
+        } else {
+            sample = downloadSRA(sample_ch)
+                .splitFastq( by : params.splitChunk, file:true )
+
+            sam =  minimapMapping(params.reference, sample)
+        }
+        
         sortedsam = sortSam(sam)
 
         samSet = sortedsam.groupTuple(sort: true)
@@ -286,7 +309,6 @@ workflow longRna {
         cleanSam = transcriptClean(mergeSam.sam,params.reference, mergeSam.sampleID)
 
         database = initiateDatabase(params.referenceAnnotation, params.annotationName, params.build)
-        database.db.view()
 
         labelReads = talonLabelReads(cleanSam, params.reference, mergeSam.sampleID)
     
