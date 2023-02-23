@@ -9,10 +9,7 @@ process downloadSRA {
     path("${sra}*")
 
     script:
-
-    """
-    fastq-dump ${sra}
-    """
+    template 'fastqDump.bash'
 
 
 }

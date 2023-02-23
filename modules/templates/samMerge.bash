@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-samtools merge -n -o ${sampleID}.sam *.sam
+samtools merge -f -n -o ${sampleID}.sam *.sam
 
 samtools view -S -b ${sampleID}.sam > tem.bam
 
