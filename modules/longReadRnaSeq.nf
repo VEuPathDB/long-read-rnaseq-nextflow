@@ -84,7 +84,7 @@ process transcriptClean {
 process initiateDatabase {
     container = 'talon1'
 
-    publishDir "$projectDir/database", mode: 'copy'
+    publishDir "$projectDir/data/database", mode: 'copy'
 
     input: 
     path(annotation)
