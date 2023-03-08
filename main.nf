@@ -32,8 +32,8 @@ if(!params.reference) {
     throw new Exception("Missing parameter params.reference")
   }
 
-if(!params.reads) {
-    throw new Exception("Missing parameter params.reads")
+if(!params.reads || !params.sraAccession) {
+    throw new Exception("Missing parameter params.reads and parameter params.sraAccession")
   }
 
 if(!params.platform) {

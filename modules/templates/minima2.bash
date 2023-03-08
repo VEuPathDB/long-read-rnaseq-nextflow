@@ -2,4 +2,4 @@
 
 set -euo pipefail
 
-minimap2 -ax splice -k14 -uf -G 5000  ${reference} ${sample} > ${sample}.sam
+minimap2 -ax splice -k14 -uf -2 -G 5000  ${reference} ${sample} > ${sample}.sam

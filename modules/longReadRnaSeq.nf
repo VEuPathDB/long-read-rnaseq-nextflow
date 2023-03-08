@@ -2,6 +2,9 @@
 nextflow.enable.dsl=2
 
 process downloadSRA {
+
+    container = 'veupathdb/bowtiemapping'
+
     input:
     val(sra)
 
@@ -49,6 +52,7 @@ process sortSam {
 
 process mergeSams {
     container = 'veupathdb/shortreadaligner'
+    
     publishDir "${params.results}/bam", pattern: "*.bam",  mode: 'copy'
 
     input:
@@ -314,16 +318,16 @@ workflow longRna {
         } else {
             sample = downloadSRA(sample_ch)
                 .splitFastq( by : params.splitChunk, file:true )
-
+            
             sam =  minimapMapping(params.reference, sample)
         }
        
         sortedsam = sortSam(sam)
 
         samSet = sortedsam.groupTuple(sort: true)
-   
+  
         mergeSam = mergeSams(samSet)
-    
+ 
         cleanSam = transcriptClean(mergeSam.sam,params.reference, mergeSam.sampleID)
 
         database = initiateDatabase(params.referenceAnnotation, params.annotationName, params.build)
