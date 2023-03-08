@@ -53,7 +53,7 @@ if(!params.results) {
 
 if (params.local){
     sample_ch =   Channel
-      .fromPath(params.reads)
+      .fromPath([params.reads + '/*.fastq', params.reads + '/*.fastq.gz', params.reads + '/*.fq.gz'])
       .splitFastq( by : params.splitChunk, file:true  )
 } else {
     input = fetchRunAccessions(params.sraAccession)
