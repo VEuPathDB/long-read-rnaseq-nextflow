@@ -71,7 +71,7 @@ process mergeSams {
 }
 
 process transcriptClean {
-    container = 'talon1'
+    container = 'veupathdb/longreadrnaseq'
 
     input:
     path(sam)
@@ -86,7 +86,7 @@ process transcriptClean {
 }
 
 process initiateDatabase {
-    container = 'talon1'
+    container = 'veupathdb/longreadrnaseq'
 
     publishDir "$projectDir/data/database", mode: 'copy'
 
@@ -106,7 +106,7 @@ process initiateDatabase {
 
 process talonLabelReads {
 
-    container = 'talon1'
+    container = 'veupathdb/longreadrnaseq'
 
     input:
     path(sample)
@@ -124,7 +124,7 @@ process talonLabelReads {
 
 process genrateConfig {
 
-    container = 'talon1'
+    container = 'veupathdb/longreadrnaseq'
 
     input:
     val(samID)
@@ -144,7 +144,7 @@ process genrateConfig {
 }
 process annotator {
 
-    container = 'talon1'
+    container = 'veupathdb/longreadrnaseq'
     
     input:
     path(config)
@@ -162,7 +162,7 @@ process annotator {
 
 process sampleList {
 
-    container = 'talon1'
+    container = 'veupathdb/longreadrnaseq'
 
     input:
     path(annotation)
@@ -178,7 +178,7 @@ process sampleList {
 
 process talonSummarize {
 
-    container = 'talon1'
+    container = 'veupathdb/longreadrnaseq'
 
     input:
     path(database)
@@ -193,7 +193,7 @@ process talonSummarize {
 
 process talonFilterTranscripts {
 
-    container = 'talon1'
+    container = 'veupathdb/longreadrnaseq'
 
     input:
     path(database)
@@ -209,7 +209,7 @@ process talonFilterTranscripts {
 
 process transcriptAbundance{
 
-    container = 'talon1'
+    container = 'veupathdb/longreadrnaseq'
 
     publishDir "${params.results}/counts", mode: 'copy'
 
@@ -231,7 +231,7 @@ process transcriptAbundance{
 
 process transcriptAbundanceNoFilter{
 
-    container = 'talon1'
+    container = 'veupathdb/longreadrnaseq'
 
     publishDir "${params.results}/counts", mode: 'copy'
 
@@ -251,7 +251,7 @@ process transcriptAbundanceNoFilter{
 }
 process createGtf {
 
-    container = 'talon1'
+    container = 'veupathdb/longreadrnaseq'
 
     publishDir "${params.results}/Gtf", mode: 'copy'
 
@@ -271,7 +271,7 @@ process createGtf {
 
 process exctarctBysample{
 
-    container = 'talon1'
+    container = 'veupathdb/longreadrnaseq'
     
     publishDir "${params.results}/counts", mode: 'copy'
 
