@@ -71,7 +71,7 @@ process mergeSams {
 }
 
 process transcriptClean {
-    container = 'veupathdb/longreadrnaseq'
+    container = 'talon1'
 
     input:
     path(sam)
@@ -85,8 +85,9 @@ process transcriptClean {
     template 'transcriptClean.bash'
 }
 
+
 process initiateDatabase {
-    container = 'veupathdb/longreadrnaseq'
+    container = 'talon1'
 
     publishDir "$projectDir/data/database", mode: 'copy'
 
@@ -106,7 +107,7 @@ process initiateDatabase {
 
 process talonLabelReads {
 
-    container = 'veupathdb/longreadrnaseq'
+    container = 'talon1'
 
     input:
     path(sample)
@@ -124,7 +125,7 @@ process talonLabelReads {
 
 process genrateConfig {
 
-    container = 'veupathdb/longreadrnaseq'
+    container = 'talon1'
 
     input:
     val(samID)
@@ -144,7 +145,7 @@ process genrateConfig {
 }
 process annotator {
 
-    container = 'veupathdb/longreadrnaseq'
+    container = 'talon1'
     
     input:
     path(config)
@@ -162,7 +163,7 @@ process annotator {
 
 process sampleList {
 
-    container = 'veupathdb/longreadrnaseq'
+    container = 'talon1'
 
     input:
     path(annotation)
@@ -178,7 +179,7 @@ process sampleList {
 
 process talonSummarize {
 
-    container = 'veupathdb/longreadrnaseq'
+    container = 'talon1'
 
     input:
     path(database)
@@ -193,7 +194,7 @@ process talonSummarize {
 
 process talonFilterTranscripts {
 
-    container = 'veupathdb/longreadrnaseq'
+    container = 'talon1'
 
     input:
     path(database)
@@ -209,7 +210,7 @@ process talonFilterTranscripts {
 
 process transcriptAbundance{
 
-    container = 'veupathdb/longreadrnaseq'
+    container = 'talon1'
 
     publishDir "${params.results}/counts", mode: 'copy'
 
@@ -231,7 +232,7 @@ process transcriptAbundance{
 
 process transcriptAbundanceNoFilter{
 
-    container = 'veupathdb/longreadrnaseq'
+    container = 'talon1'
 
     publishDir "${params.results}/counts", mode: 'copy'
 
@@ -251,7 +252,7 @@ process transcriptAbundanceNoFilter{
 }
 process createGtf {
 
-    container = 'veupathdb/longreadrnaseq'
+    container = 'talon1'
 
     publishDir "${params.results}/Gtf", mode: 'copy'
 
@@ -271,7 +272,7 @@ process createGtf {
 
 process exctarctBysample{
 
-    container = 'veupathdb/longreadrnaseq'
+    container = 'talon1'
     
     publishDir "${params.results}/counts", mode: 'copy'
 
@@ -311,6 +312,7 @@ workflow longRna {
         sample_ch
 
     main:
+
         if (params.local) {
 
         sam =  minimapMapping(params.reference, sample_ch)
