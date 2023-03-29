@@ -284,9 +284,7 @@ process exctarctBysample{
     path("*tsv")
 
     script:
-    """
-    subset_by_sample.py "${unFilteredCounts}" "${filteredCounts}"
-    """
+    template 'subsetSample.bash'
 }
 
 process convertGtfToGff {
@@ -302,10 +300,23 @@ process convertGtfToGff {
     path("*gff")
 
     script:
+    template 'gtfToGff.bash'
+    
+}
 
-    """
-    agat_convert_sp_gxf2gxf.pl -g "${gtf}" -o "${params.build}.gff"
-    """
+process indexGff {
+    container = "veupathdb/proteintogenomealignment:latest"
+
+    publishDir "${params.results}/Gtf", mode: 'copy'
+
+    input:
+    path(gff)
+
+    output:
+    path("*gff*")
+    
+    script:
+    template 'indexGff.bash'
 }
 workflow longRna {
     take: 
@@ -353,5 +364,6 @@ workflow longRna {
         gtf = createGtf(annotation.tsv_results, params.database, params.annotationName, params.build)
         subsetCount = exctarctBysample(abundanceNoFilter, abundanceFilter )
         makeGff = convertGtfToGff(gtf)
+        iondex = indexGff(makeGff)
 
 }
