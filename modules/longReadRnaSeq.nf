@@ -364,6 +364,6 @@ workflow longRna {
         gtf = createGtf(annotation.tsv_results, params.database, params.annotationName, params.build)
         subsetCount = exctarctBysample(abundanceNoFilter, abundanceFilter )
         makeGff = convertGtfToGff(gtf)
-        iondex = indexGff(makeGff)
+        index = indexGff(makeGff)
 
 }
