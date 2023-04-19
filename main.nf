@@ -32,7 +32,7 @@ if(!params.reference) {
     throw new Exception("Missing parameter params.reference")
   }
 
-if(!params.reads || !params.sraAccession) {
+if(!params.reads && !params.sraAccession) {
     throw new Exception("Missing parameter params.reads and parameter params.sraAccession")
   }
 
