@@ -84,7 +84,7 @@ process transcriptClean {
 process initiateDatabase {
   container = 'sybah/longreadrnaseq'
 
-  publishDir "$projectDir/data/database", mode: 'copy'
+  publishDir "${params.databaseDir}", mode: 'copy'
 
   input: 
     path(annotation)
