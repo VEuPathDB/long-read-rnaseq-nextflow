@@ -66,7 +66,7 @@ process mergeSams {
 
 
 process transcriptClean {
-  container = 'sybah/lognreadrnaseq'
+  container = 'sybah/longreadrnaseq'
 
   input:
     path(sam)
@@ -82,7 +82,7 @@ process transcriptClean {
 
 
 process initiateDatabase {
-  container = 'sybah/lognreadrnaseq'
+  container = 'sybah/longreadrnaseq'
 
   publishDir "$projectDir/data/database", mode: 'copy'
 
@@ -92,7 +92,7 @@ process initiateDatabase {
     val(build)
    
   output:
-    path("*talon.db"), emit: db
+    path("*.db"), emit: db
     val(annot_name), emit: db_name
 
   script:
@@ -101,7 +101,7 @@ process initiateDatabase {
 
 
 process talonLabelReads {
-  container = 'sybah/lognreadrnaseq'
+  container = 'sybah/longreadrnaseq'
 
   input:
     path(sample)
@@ -117,7 +117,7 @@ process talonLabelReads {
 }
 
 process generateConfig {
-    container = 'sybah/lognreadrnaseq'
+    container = 'sybah/longreadrnaseq'
 
   input:
     val(samID)
@@ -137,7 +137,7 @@ process generateConfig {
 
 
 process annotator {
-  container = 'sybah/lognreadrnaseq'
+  container = 'sybah/longreadrnaseq'
     
   input:
     path(config)
@@ -155,7 +155,7 @@ process annotator {
 
 
 process sampleList {
-  container = 'sybah/lognreadrnaseq'
+  container = 'sybah/longreadrnaseq'
 
   input:
     path(annotation)
@@ -171,7 +171,7 @@ process sampleList {
 
 
 process talonSummarize {
-  container = 'sybah/lognreadrnaseq'
+  container = 'sybah/longreadrnaseq'
 
   input:
     path(database)
@@ -186,7 +186,7 @@ process talonSummarize {
 
 
 process talonFilterTranscripts {
-  container = 'sybah/lognreadrnaseq'
+  container = 'sybah/longreadrnaseq'
 
   input:
     path(database)
@@ -202,7 +202,7 @@ process talonFilterTranscripts {
 
 
 process transcriptAbundance{
-  container = 'sybah/lognreadrnaseq'
+  container = 'sybah/longreadrnaseq'
 
   publishDir "${params.results}/counts", mode: 'copy'
 
@@ -222,7 +222,7 @@ process transcriptAbundance{
 
 
 process transcriptAbundanceNoFilter{
-  container = 'sybah/lognreadrnaseq'
+  container = 'sybah/longreadrnaseq'
 
   publishDir "${params.results}/counts", mode: 'copy'
 
@@ -241,7 +241,7 @@ process transcriptAbundanceNoFilter{
 
 
 process createGtf {
-  container = 'sybah/lognreadrnaseq'
+  container = 'sybah/longreadrnaseq'
 
   publishDir "${params.results}/Gtf", mode: 'copy'
 
@@ -260,7 +260,7 @@ process createGtf {
 
 
 process extractBysample{
-  container = 'sybah/lognreadrnaseq'
+  container = 'sybah/longreadrnaseq'
     
   publishDir "${params.results}/counts", mode: 'copy'
 
