@@ -50,7 +50,7 @@ process sortSam {
 process mergeSams {
   container = 'veupathdb/shortreadaligner'
     
-  publishDir "${params.results}/bam", pattern: "*.bam",  mode: 'copy'
+  publishDir "${params.results}/bam", pattern: "*.bam*",  mode: 'copy'
 
   input:
     tuple val(sampleID), path("*.sam")
@@ -59,6 +59,7 @@ process mergeSams {
     path("${sampleID}.sam"), emit: sam
     val(sampleID), emit: sampleID
     path("*bam"), emit: bam
+    path("*bam.bai"), emit: bam_bai
 
   script:
     template 'samMerge.bash'  
@@ -191,7 +192,10 @@ process talonFilterTranscripts {
   input:
     path(database)
     path(datasets)
-    val(annot_name) 
+    val(annot_name)
+    val(maxFracA)
+    val(minCount)
+    val(minDatasets)
 
   output:
     path("filtered_transcripts.csv")
@@ -342,7 +346,7 @@ workflow longRna {
     namesFromAnnotation = sampleList(annotation.tsv_results)
     talonSummary = talonSummarize(params.database, annotation.tsv_results)
 
-    filtered = talonFilterTranscripts(params.database, namesFromAnnotation, params.annotationName) 
+    filtered = talonFilterTranscripts(params.database, namesFromAnnotation, params.annotationName, params.maxFracA, params.minCount, params.minDatasets) 
 
     abundanceNoFilter = transcriptAbundanceNoFilter(params.database, params.annotationName, params.build, annotation.tsv_results)
     abundanceFilter =  transcriptAbundance(params.database, filtered, params.annotationName, params.build, annotation.tsv_results)
