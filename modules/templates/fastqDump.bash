@@ -2,4 +2,11 @@
 
 set -euo pipefail
 
-fastq-dump ${sra}
+if [ -s $HOME/.ncbi/user-settings.mkfg ]
+then
+    fastq-dump ${sra}
+else
+    mkdir -p $HOME/.ncbi
+    cp /usr/bin/user-settings.mkfg $HOME/.ncbi/
+    fastq-dump ${sra}
+fi
