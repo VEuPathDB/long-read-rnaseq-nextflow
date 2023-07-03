@@ -2,4 +2,4 @@
 
 set -euo pipefail
 
-talon_initialize_database --f ${annotation} --a ${annot_name} --g ${build}  --o ${build}
+talon_initialize_database --f ${annotation} --a ${annotationName} --g ${build}  --o ${build}
