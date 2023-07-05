@@ -89,12 +89,12 @@ process initiateDatabase {
 
   input: 
     path(annotation)
-    val(annot_name)
+    val(annotationName)
     val(build)
    
   output:
     path("*.db"), emit: db
-    val(annot_name), emit: db_name
+    val(annotationName), emit: db_name
 
   script:
     template 'initDatabase.bash'
@@ -144,7 +144,7 @@ process annotator {
     path(config)
     path(database)
     val(build)
-    val(annot_name)
+    val(annotationName)
 
   output:
     path("results_talon_read_annot.tsv"), emit: tsv_results
@@ -192,7 +192,7 @@ process talonFilterTranscripts {
   input:
     path(database)
     path(datasets)
-    val(annot_name)
+    val(annotationName)
     val(maxFracA)
     val(minCount)
     val(minDatasets)
@@ -213,7 +213,7 @@ process transcriptAbundance{
   input:
     path(database)
     path(wishList)
-    val(annot_name)
+    val(annotationName)
     val(build)
     path("results*")
 
@@ -232,7 +232,7 @@ process transcriptAbundanceNoFilter{
 
   input:
     path(database)
-    val(annot_name)
+    val(annotationName)
     val(build)
     path("results*")
 
@@ -252,7 +252,7 @@ process createGtf {
   input:
     path(annotOut)
     path(database)
-    val(annot_name)
+    val(annotationName)
     val(build)
 
   output:

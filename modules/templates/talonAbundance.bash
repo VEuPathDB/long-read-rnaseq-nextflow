@@ -2,4 +2,4 @@
 
 set -euo pipefail
 
-talon_abundance --db ${database} --whitelist ${wishList}  -a ${annot_name} --build ${build} --o "results"
+talon_abundance --db ${database} --whitelist ${wishList}  -a ${annotationName} --build ${build} --o "results"
