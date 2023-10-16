@@ -67,7 +67,7 @@ process mergeSams {
 
 
 process transcriptClean {
-  container = 'sybah/longreadrnaseq'
+  container = 'veupathdb/longreadrnaseq'
 
   input:
     path(sam)
@@ -83,7 +83,7 @@ process transcriptClean {
 
 
 process initiateDatabase {
-  container = 'sybah/longreadrnaseq'
+  container = 'veupathdb/longreadrnaseq'
 
   publishDir "${params.databaseDir}", mode: 'copy'
 
@@ -102,7 +102,7 @@ process initiateDatabase {
 
 
 process talonLabelReads {
-  container = 'sybah/longreadrnaseq'
+  container = 'veupathdb/longreadrnaseq'
 
   input:
     path(sample)
@@ -118,7 +118,7 @@ process talonLabelReads {
 }
 
 process generateConfig {
-    container = 'sybah/longreadrnaseq'
+    container = 'veupathdb/longreadrnaseq'
 
   input:
     val(samID)
@@ -138,7 +138,7 @@ process generateConfig {
 
 
 process annotator {
-  container = 'sybah/longreadrnaseq'
+  container = 'veupathdb/longreadrnaseq'
     
   input:
     path(config)
@@ -156,7 +156,7 @@ process annotator {
 
 
 process sampleList {
-  container = 'sybah/longreadrnaseq'
+  container = 'veupathdb/longreadrnaseq'
 
   input:
     path(annotation)
@@ -172,7 +172,7 @@ process sampleList {
 
 
 process talonSummarize {
-  container = 'sybah/longreadrnaseq'
+  container = 'veupathdb/longreadrnaseq'
 
   input:
     path(database)
@@ -187,7 +187,7 @@ process talonSummarize {
 
 
 process talonFilterTranscripts {
-  container = 'sybah/longreadrnaseq'
+  container = 'veupathdb/longreadrnaseq'
 
   input:
     path(database)
@@ -206,7 +206,7 @@ process talonFilterTranscripts {
 
 
 process transcriptAbundance{
-  container = 'sybah/longreadrnaseq'
+  container = 'veupathdb/longreadrnaseq'
 
   publishDir "${params.results}/counts", mode: 'copy'
 
@@ -226,7 +226,7 @@ process transcriptAbundance{
 
 
 process transcriptAbundanceNoFilter{
-  container = 'sybah/longreadrnaseq'
+  container = 'veupathdb/longreadrnaseq'
 
   publishDir "${params.results}/counts", mode: 'copy'
 
@@ -245,7 +245,7 @@ process transcriptAbundanceNoFilter{
 
 
 process createGtf {
-  container = 'sybah/longreadrnaseq'
+  container = 'veupathdb/longreadrnaseq'
 
   publishDir "${params.results}/Gtf", mode: 'copy'
 
@@ -264,7 +264,7 @@ process createGtf {
 
 
 process extractBysample{
-  container = 'sybah/longreadrnaseq'
+  container = 'veupathdb/longreadrnaseq'
     
   publishDir "${params.results}/counts", mode: 'copy'
 
