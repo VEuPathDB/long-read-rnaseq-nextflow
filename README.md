@@ -1,5 +1,5 @@
 # <p align=center>Long Read RNA-Seq transcript annotation Workflow</p>
-Nextflow workflow for long read RNA-seq analysis using minimap2 and talon. 
+This workflow identify and quantify know and novel genes/transcript isoforms using long read RNA-seq data. The [TALON](https://github.com/mortazavilab/TALON) pipeline is used for the transcript identification and quantification. The long read are mapped to a reference genome using minimap2 and the sam file sorted using Samtools. After sorting TranscriptClean is used to fix noncanonical junctions. 
 
 ***<p align=center>Nextflow workflow</p>***  
 ```mermaid
