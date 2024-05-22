@@ -20,11 +20,18 @@ To run the work the following dependencies need to be install
 <br />
 
 
-**<p align=center>Input Data</p>**
+**<p align=left>Input Data</p>**
 Example of input data can be found in the `data` directory. The following files are require
 * Long read Fastq files or a csv file containing the list SRA accession numbers to be analyzed.
 * A reference for the organism being analyzed
-* A nextflow config file `nextflow.config`
+* A nextflow config file `nextflow.config`.
+
+**<p align=left>Input Data</p>**
+The following output files are generated and can be found in the result folder specify in the config file
+* Un-filtered transcripts counts
+* Filtered transcripts counts
+* GTF annotation file generated from un-filters annotations
+* GTF file generated from filtered annotation. 
 
 ***<p align=center>Nextflow workflow diagram</p>***  
 ```mermaid
