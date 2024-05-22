@@ -1,6 +1,10 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
+/*
+* This process download the Fastq sequence files from the sequence read archive
+
+*/
 process downloadSRA {
   container = 'veupathdb/bowtiemapping'
 
@@ -14,9 +18,19 @@ process downloadSRA {
     template 'fastqDump.bash'
 }
 
+/*
+This below process map the long read RNA-Seq data to the reference genome using minimap2 
+
+@reference is the refence genome in fasta format
+@sample in the sample to be mapped
+
+For efficiency in mapping, each fastq file is split in to smaller chuck, mapp, coordinate sort and merge.
+
+The out put is a sam file
+*/
 
 process minimapMapping{
-  container = 'staphb/minimap2'
+  container = 'staphb/minimap2:2.28'
     
   input:
     path(reference)
@@ -29,7 +43,13 @@ process minimapMapping{
     sample_base = sample.getSimpleName()
     template 'minima2.bash'
 }
+/*
+This process sort the alignment file (sam) by cooridinates
 
+@sam is the sam file generated from the mapping step above
+
+Output a coordinate sorted sam file.
+*/
 
 process sortSam {
   container = 'veupathdb/shortreadaligner'
@@ -46,6 +66,14 @@ process sortSam {
     template 'samSorting.bash'
 }
 
+/*
+
+This process merge the coordinate sorted sam files
+@sampleID tuple of sample IDs of sam file from the same split above
+
+Output is bam file of merge sam files. 
+
+*/
 
 process mergeSams {
   container = 'veupathdb/shortreadaligner'
@@ -65,6 +93,15 @@ process mergeSams {
     template 'samMerge.bash'  
 }
 
+/*
+This process run TranscriptClean to fix non-canonical jubctions
+@sam, coordinate sorted sam file
+@reference, reference genome in fasta format
+@sample_base, sample base name
+
+Output is sam file with corrected non-canonical junctions
+
+*/
 
 process transcriptClean {
   container = 'veupathdb/longreadrnaseq'
@@ -81,7 +118,10 @@ process transcriptClean {
     template 'transcriptClean.bash'
 }
 
+/*
+This process initialise the TALON database using the current available annotation. 
 
+*/
 process initiateDatabase {
   container = 'veupathdb/longreadrnaseq'
 
@@ -100,7 +140,9 @@ process initiateDatabase {
     template 'initDatabase.bash'
 }
 
-
+/*
+This process label the reads with potential priming sites
+*/
 process talonLabelReads {
   container = 'veupathdb/longreadrnaseq'
 
@@ -116,6 +158,10 @@ process talonLabelReads {
   script:
     template 'readLabel.bash'
 }
+
+/*
+This process generate the TALON configuration file
+*/
 
 process generateConfig {
     container = 'veupathdb/longreadrnaseq'
@@ -136,6 +182,10 @@ process generateConfig {
     """
 }
 
+/*
+
+This process annotate the transcripts 
+*/
 
 process annotator {
   container = 'veupathdb/longreadrnaseq'
@@ -154,7 +204,10 @@ process annotator {
     template 'talonAnnotate.bash'
 }
 
+/*
+This process generate the sample sample list from the annotation database
 
+*/
 process sampleList {
   container = 'veupathdb/longreadrnaseq'
 
@@ -185,6 +238,10 @@ process talonSummarize {
     template 'talonSummarise.bash'
 }
 
+/*
+Apply filter to TALON transcript using these talon default setting maxFracA = 0.5, minCount = 5, minDatasets = 2
+
+*/
 
 process talonFilterTranscripts {
   container = 'veupathdb/longreadrnaseq'
@@ -204,7 +261,9 @@ process talonFilterTranscripts {
     template 'talonTranscriptFilter.bash'
 }
 
-
+/*
+Determine transcript abudance for individual transcripts using TALON default filter from the above process and put them a matrix
+*/
 process transcriptAbundance{
   container = 'veupathdb/longreadrnaseq'
 
@@ -224,6 +283,9 @@ process transcriptAbundance{
     template 'talonAbundance.bash'
 }
 
+/*
+Filter transcript abudance for individual transcripts without a filter and put them a matrix
+*/
 
 process transcriptAbundanceNoFilter{
   container = 'veupathdb/longreadrnaseq'
@@ -242,6 +304,10 @@ process transcriptAbundanceNoFilter{
   script:
     template 'talonAbundanceNoFilter.bash'
 }
+
+/*
+Generate an annotation file (Gtf) based on the gene model identified by talon
+*/
 
 
 process createGtf {
@@ -262,7 +328,9 @@ process createGtf {
     template 'talonGtf.bash'    
 }
 
-
+/*
+Extract results from individual samples from the expression matrix genetated by TALON
+*/
 process extractBysample{
   container = 'veupathdb/longreadrnaseq'
     
@@ -281,6 +349,9 @@ process extractBysample{
     """
 }
 
+/*
+Convert the TALON generated Gtf into Gff
+*/
 
 process convertGtfToGff {
   container = 'quay.io/biocontainers/agat:0.8.0--pl5262hdfd78af_0'
@@ -298,6 +369,10 @@ process convertGtfToGff {
     
 }
 
+/*
+Process indix the final gtf file
+
+*/
 process indexGff {
     container = "veupathdb/proteintogenomealignment:latest"
 

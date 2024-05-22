@@ -32,6 +32,8 @@ The following output files are generated and can be found in the result folder s
 * Filtered transcripts counts
 * GTF annotation file generated from un-filters annotations
 * GTF file generated from filtered annotation. 
+* A bam file for each sample analyzed
+
 
 ***<p align=center>Nextflow workflow diagram</p>***  
 ```mermaid
