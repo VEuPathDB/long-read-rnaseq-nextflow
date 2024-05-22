@@ -1,4 +1,4 @@
-# <p align=center>Long Read RNA-Seq Workflow</p>
+# <p align=center>Long Read RNA-Seq transcript annotation Workflow</p>
 Nextflow workflow for long read RNA-seq analysis using minimap2 and talon. 
 
 ***<p align=center>Nextflow workflow</p>***  
