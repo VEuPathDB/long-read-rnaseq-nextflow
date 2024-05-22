@@ -2,4 +2,5 @@
 
 set -euo pipefail
 
-agat_convert_sp_gxf2gxf.pl -g ${gtf} -o ${params.build}.gff
+agat_convert_sp_gxf2gxf.pl -g ${gtf} \
+                            -o ${params.build}.gff
