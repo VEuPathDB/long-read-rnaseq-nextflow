@@ -3,7 +3,13 @@ This workflow identify and quantify know and novel genes/transcript isoforms usi
 TALON is then used the label the read to identify potential internal priming. A database of existing gene models are then generated based on the annotation to identify existing gene model and potential novel models. After identification of gene models, TALON quantify the expression level of each gene transcript. More details on the talon method can be found [here](https://www.biorxiv.org/content/10.1101/672931v2.full)
 
 
-***<p align=center>Nextflow workflow</p>***  
+**<p align=center>Input Data</p>**
+Example of input data can be found in the `data` directory. The following files are require
+* Long read Fastq files or a csv file containing the list SRA accession numbers to be analyzed.
+* A reference for the organism being analyzed
+* A nextflow config file `nextflow.config`
+
+***<p align=center>Nextflow workflow diagram</p>***  
 ```mermaid
 flowchart TD
     p0((Channel.fromPath))
