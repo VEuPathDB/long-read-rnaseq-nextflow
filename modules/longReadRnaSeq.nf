@@ -6,7 +6,7 @@ nextflow.enable.dsl=2
 
 */
 process downloadSRA {
-  container = 'veupathdb/bowtiemapping'
+  container = 'veupathdb/bowtiemapping:v1.0.0'
 
   input:
     val(sra)
@@ -52,7 +52,7 @@ Output a coordinate sorted sam file.
 */
 
 process sortSam {
-  container = 'veupathdb/shortreadaligner'
+  container = 'veupathdb/shortreadaligner:v1.0.0'
 
   input:
     path(sam)
@@ -76,7 +76,7 @@ Output is bam file of merge sam files.
 */
 
 process mergeSams {
-  container = 'veupathdb/shortreadaligner'
+  container = 'veupathdb/shortreadaligner:v1.0.0'
     
   publishDir "${params.results}/bam", pattern: "*.bam*",  mode: 'copy'
 
@@ -104,7 +104,7 @@ Output is sam file with corrected non-canonical junctions
 */
 
 process transcriptClean {
-  container = 'veupathdb/longreadrnaseq'
+  container = 'veupathdb/longreadrnaseq:v1.0.0'
 
   input:
     path(sam)
@@ -123,7 +123,7 @@ This process initialise the TALON database using the current available annotatio
 
 */
 process initiateDatabase {
-  container = 'veupathdb/longreadrnaseq'
+  container = 'veupathdb/longreadrnaseq:v1.0.0'
 
   publishDir "${params.databaseDir}", mode: 'copy'
 
@@ -144,7 +144,7 @@ process initiateDatabase {
 This process label the reads with potential priming sites
 */
 process talonLabelReads {
-  container = 'veupathdb/longreadrnaseq'
+  container = 'veupathdb/longreadrnaseq:v1.0.0'
 
   input:
     path(sample)
@@ -164,7 +164,7 @@ This process generate the TALON configuration file
 */
 
 process generateConfig {
-    container = 'veupathdb/longreadrnaseq'
+    container = 'veupathdb/longreadrnaseq:v1.0.0'
 
   input:
     val(samID)
@@ -188,7 +188,7 @@ This process annotate the transcripts
 */
 
 process annotator {
-  container = 'veupathdb/longreadrnaseq'
+  container = 'veupathdb/longreadrnaseq:v1.0.0'
     
   input:
     path(config)
@@ -209,7 +209,7 @@ This process generate the sample sample list from the annotation database
 
 */
 process sampleList {
-  container = 'veupathdb/longreadrnaseq'
+  container = 'veupathdb/longreadrnaseq:v1.0.0'
 
   input:
     path(annotation)
@@ -225,7 +225,7 @@ process sampleList {
 
 
 process talonSummarize {
-  container = 'veupathdb/longreadrnaseq'
+  container = 'veupathdb/longreadrnaseq:v1.0.0'
 
   input:
     path(database)
@@ -244,7 +244,7 @@ Apply filter to TALON transcript using these talon default setting maxFracA = 0.
 */
 
 process talonFilterTranscripts {
-  container = 'veupathdb/longreadrnaseq'
+  container = 'veupathdb/longreadrnaseq:v1.0.0'
 
   input:
     path(database)
@@ -265,7 +265,7 @@ process talonFilterTranscripts {
 Determine transcript abudance for individual transcripts using TALON default filter from the above process and put them a matrix
 */
 process transcriptAbundance{
-  container = 'veupathdb/longreadrnaseq'
+  container = 'veupathdb/longreadrnaseq:v1.0.0'
 
   publishDir "${params.results}/counts", mode: 'copy'
 
@@ -288,7 +288,7 @@ Filter transcript abudance for individual transcripts without a filter and put t
 */
 
 process transcriptAbundanceNoFilter{
-  container = 'veupathdb/longreadrnaseq'
+  container = 'veupathdb/longreadrnaseq:v1.0.0'
 
   publishDir "${params.results}/counts", mode: 'copy'
 
@@ -311,7 +311,7 @@ Generate an annotation file (Gtf) based on the gene model identified by talon
 
 
 process createGtf {
-  container = 'veupathdb/longreadrnaseq'
+  container = 'veupathdb/longreadrnaseq:v1.0.0'
 
   publishDir "${params.results}/Gtf", mode: 'copy'
 
@@ -332,7 +332,7 @@ process createGtf {
 Extract results from individual samples from the expression matrix genetated by TALON
 */
 process extractBysample{
-  container = 'veupathdb/longreadrnaseq'
+  container = 'veupathdb/longreadrnaseq:v1.0.0'
     
   publishDir "${params.results}/counts", mode: 'copy'
 
@@ -374,7 +374,7 @@ Process indix the final gtf file
 
 */
 process indexGff {
-    container = "veupathdb/proteintogenomealignment:latest"
+    container = "veupathdb/proteintogenomealignment:v1.0.0"
 
     publishDir "${params.results}/Gtf", mode: 'copy'
 
