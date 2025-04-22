@@ -25,15 +25,15 @@ include { longRna } from  './modules/longReadRnaSeq.nf'
 //---------------------------------------------------------------
 
 
-if(!params.referenceAnnotation) {
-    throw new Exception("Missing parameter params.referenceAnnotation")
+if(!params.gtf) {
+    throw new Exception("Missing parameter params.gtf")
   }
-if(!params.reference) {
-    throw new Exception("Missing parameter params.reference")
+if(!params.fasta) {
+    throw new Exception("Missing parameter params.fasta")
   }
 
-if(!params.reads && !params.sraAccession) {
-    throw new Exception("Missing parameter params.reads and parameter params.sraAccession")
+if(!params.input) {
+    throw new Exception("Missing parameter params.input")
   }
 
 if(!params.platform) {
@@ -51,18 +51,22 @@ if(!params.results) {
     throw new Exception("Missing parameter params.results")
   }
 
-if (params.local){
-    sample_ch =   Channel
-      .fromPath([params.reads + '/*.fastq', params.reads + '/*.fastq.gz', params.reads + '/*.fq.gz'])
-      .splitFastq( by : params.splitChunk, file:true  )
-} else {
-    input = fetchRunAccessions(params.sraAccession)
-    sample_ch = Channel.fromList(input)
-}
+
+
+sampleRows = Channel.fromPath(params.input + "/" + params.samplesheetFileName)
+  .splitCsv( skip:1)
+
+sample_ch = sampleRows.map { row ->
+  fileName = file(params.input + "/" + row[1]);
+  return [ [id: row[0] ], fileName ]
+}.map {
+  return ([it[0], it[1].splitFastq(by : params.splitChunk, file:true )])
+}.transpose()
+
 //--------------------------------------
 // Process the workflow
 //-------------------------------------
 
 workflow {
-    longRna(sample_ch)
+  longRna(sample_ch)
 }

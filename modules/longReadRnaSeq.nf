@@ -1,22 +1,6 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
-/*
-* This process download the Fastq sequence files from the sequence read archive
-
-*/
-process downloadSRA {
-  container = 'veupathdb/bowtiemapping:1.0.0'
-
-  input:
-    val(sra)
-
-  output:
-    path("${sra}*")
-
-  script:
-    template 'fastqDump.bash'
-}
 
 /*
 This below process map the long read RNA-Seq data to the reference genome using minimap2 
@@ -33,15 +17,17 @@ process minimapMapping{
   container = 'staphb/minimap2:2.28'
     
   input:
-    path(reference)
-    path(sample)
+  path(reference)
+  tuple val(meta), path(sample)
 
   output:
-    path("*sam") 
+  tuple val(meta), path("minimap.sam")
 
   script:
-    sample_base = sample.getSimpleName()
-    template 'minima2.bash'
+  """
+  minimap2 -ax splice -k14 -uf -2 -G 5000  ${reference} ${sample} > minimap.sam
+  """
+
 }
 /*
 This process sort the alignment file (sam) by cooridinates
@@ -52,18 +38,18 @@ Output a coordinate sorted sam file.
 */
 
 process sortSam {
-  container = 'veupathdb/shortreadaligner:1.0.0'
+  container = 'quay.io/biocontainers/samtools:1.20--h50ea8bc_0'
 
   input:
-    path(sam)
+  tuple val(meta), path(sam)
 
   output:
-    tuple val("${sample_base}"), path("*sam")
+  tuple val(meta), path("sorted.sam")
 
   script:
-    split_name = sam.getBaseName()
-    sample_base = sam.getSimpleName()
-    template 'samSorting.bash'
+  """
+  samtools sort ${sam} -o sorted.sam
+  """
 }
 
 /*
@@ -76,22 +62,41 @@ Output is bam file of merge sam files.
 */
 
 process mergeSams {
-  container = 'veupathdb/shortreadaligner:1.0.0'
-    
-  publishDir "${params.results}/bam", pattern: "*.bam*",  mode: 'copy'
+  container = 'quay.io/biocontainers/samtools:1.20--h50ea8bc_0'
 
   input:
-    tuple val(sampleID), path("*.sam")
+  tuple val(meta), path("*.sam")  
     
   output:
-    path("${sampleID}.sam"), emit: sam
-    val(sampleID), emit: sampleID
-    path("*bam"), emit: bam
-    path("*bam.bai"), emit: bam_bai
+  tuple val(meta), path("merged_sorted.sam")
+  
+  script:
+  """
+  samtools merge -f merged.sam *.sam
+  samtools sort merged.sam -o merged_sorted.sam
+  """
+}
+
+
+process bam {
+  container = 'quay.io/biocontainers/samtools:1.20--h50ea8bc_0'
+
+  publishDir "${params.results}/bam", pattern: "*.bam*",  mode: 'copy'
+  
+  input:
+  tuple val(meta), path(sam)
+
+  output:
+  path("${meta.id}.bam")
+  path("${meta.id}.bam.bai")
 
   script:
-    template 'samMerge.bash'  
+  """
+  samtools view -bS $sam > ${meta.id}.bam
+  samtools index ${meta.id}.bam
+  """
 }
+
 
 /*
 This process run TranscriptClean to fix non-canonical jubctions
@@ -107,15 +112,19 @@ process transcriptClean {
   container = 'veupathdb/longreadrnaseq:1.0.0'
 
   input:
-    path(sam)
-    path(reference)
-    val(sample_base)
-
+  tuple val(meta), path(sam)
+  path(reference)
+  
   output:
-    path("${sample_base}_clean.sam")
+  tuple val(meta), path("${meta.id}_clean.sam")
 
   script:
-    template 'transcriptClean.bash'
+  """
+  python /usr/local/bin/TranscriptClean.py --sam ${sam} \
+    --genome ${reference} \
+    --outprefix ${meta.id}
+  """
+
 }
 
 /*
@@ -125,19 +134,21 @@ This process initialise the TALON database using the current available annotatio
 process initiateDatabase {
   container = 'veupathdb/longreadrnaseq:1.0.0'
 
-  publishDir "${params.databaseDir}", mode: 'copy'
-
-  input: 
-    path(annotation)
-    val(annotationName)
-    val(build)
+  input:
+  path(annotation)
+  val(annotationName)
+  val(build)
    
   output:
-    path("*.db"), emit: db
-    val(annotationName), emit: db_name
+  path("${build}.db")
 
   script:
-    template 'initDatabase.bash'
+  """
+  talon_initialize_database --f ${annotation} \
+    --a ${annotationName} \
+    --g ${build}  \
+    --o ${build}
+  """
 }
 
 /*
@@ -147,16 +158,21 @@ process talonLabelReads {
   container = 'veupathdb/longreadrnaseq:1.0.0'
 
   input:
-    path(sample)
-    path(reference)
-    val(sample_base)
+  tuple val(meta), path(sam)
+  path(reference)
 
   output:
-    path("${sample_base}*.sam"), emit: samFiles
-    val("${sample_base}"), emit: sample_base
-
+  tuple val(meta), path("${meta.id}_labeled.sam")
+  
   script:
-    template 'readLabel.bash'
+  """
+  talon_label_reads --f ${sam} \
+                  --g ${reference} \
+                  --t 1 \
+                  --ar 20 \
+                  --deleteTmp \
+                  --o ${meta.id}
+  """
 }
 
 /*
@@ -167,19 +183,18 @@ process generateConfig {
     container = 'veupathdb/longreadrnaseq:1.0.0'
 
   input:
-    val(samID)
+    tuple val(meta), path(sam)
     val(build)
-    val(seqPlatform)
-    val(sampleName)
+    val(platform)
 
   output:
-    path("config.txt"), emit: config_file
-    path("Sample_names.txt"), emit: sampleNames
+    path("config.txt")
 
   script:
-    """
-    config.py "${samID}" "${build}"  "${seqPlatform}"  "${sampleName}"
-    """
+  """
+  samFullPath=\$(readlink -f $sam)
+  echo ${meta.id},$build,$platform,\$samFullPath >config.txt
+  """
 }
 
 /*
@@ -191,17 +206,23 @@ process annotator {
   container = 'veupathdb/longreadrnaseq:1.0.0'
     
   input:
-    path(config)
-    path(database)
-    val(build)
-    val(annotationName)
+  path(configFile)
+  path(database)
+  val(build)
 
   output:
-    path("results_talon_read_annot.tsv"), emit: tsv_results
-    path("results_QC.log")
+  path("results_talon_read_annot.tsv"), emit: results
+  path("${database}_modified.db"), emit: database
 
   script:
-    template 'talonAnnotate.bash'
+  """
+  cp $database ${database}_modified.db
+  talon --f ${configFile} \
+    --db ${database}_modified.db \
+    --build ${build} \
+    --o results
+  """
+
 }
 
 /*
@@ -224,20 +245,6 @@ process sampleList {
 }
 
 
-process talonSummarize {
-  container = 'veupathdb/longreadrnaseq:1.0.0'
-
-  input:
-    path(database)
-    path("results")
-
-  output:
-    path("results*")
-
-  script:
-    template 'talonSummarise.bash'
-}
-
 /*
 Apply filter to TALON transcript using these talon default setting maxFracA = 0.5, minCount = 5, minDatasets = 2
 
@@ -258,7 +265,15 @@ process talonFilterTranscripts {
     path("filtered_transcripts.csv")
 
   script:
-    template 'talonTranscriptFilter.bash'
+  """
+  talon_filter_transcripts --db ${database}\
+    --datasets ${datasets} \
+    -a ${annotationName} \
+    --maxFracA ${maxFracA}  \
+    --minCount ${minCount}  \
+    --minDatasets ${minDatasets} \
+    --o filtered_transcripts.csv
+  """
 }
 
 /*
@@ -280,7 +295,14 @@ process transcriptAbundance{
     path("results*")
 
   script:
-    template 'talonAbundance.bash'
+  """
+  talon_abundance --db ${database} \
+    --whitelist ${wishList}  \
+    -a ${annotationName} \
+    --build ${build} \
+    --o "results"
+  """
+
 }
 
 /*
@@ -293,16 +315,22 @@ process transcriptAbundanceNoFilter{
   publishDir "${params.results}/counts", mode: 'copy'
 
   input:
-    path(database)
-    val(annotationName)
-    val(build)
-    path("results*")
+  path(database)
+  val(annotationName)
+  val(build)
+  path("results*")
 
   output:
-    path("results*")
+  path("results*")
 
   script:
-    template 'talonAbundanceNoFilter.bash'
+  """
+  talon_abundance --db ${database}  \
+    -a ${annotationName} \
+    --build ${build} \
+    --o "results_no_filter"
+  """
+
 }
 
 /*
@@ -359,14 +387,17 @@ process convertGtfToGff {
   publishDir "${params.results}/Gtf", mode: 'copy'
 
   input:
-    path(gtf)
+  path(gtf)
 
   output:
-    path("*gff")
+  path("*gff")
 
-    script:
-    template 'gtfToGff.bash'
-    
+  script:
+  """
+  agat_convert_sp_gxf2gxf.pl -g ${gtf} \
+    -o ${params.build}.gff
+  """
+
 }
 
 /*
@@ -374,18 +405,22 @@ Process indix the final gtf file
 
 */
 process indexGff {
-    container = "veupathdb/proteintogenomealignment:1.0.0"
+  container = 'biocontainers/tabix:v1.9-11-deb_cv1'
 
-    publishDir "${params.results}/Gtf", mode: 'copy'
+  publishDir "${params.results}/Gtf", mode: 'copy'
 
-    input:
-    path(gff)
+  input:
+  path(gff)
 
-    output:
-    path("*gff*")
+  output:
+  path("*gff*")
     
-    script:
-    template 'indexGff.bash'
+  script:
+  """
+  sort -k1,1 -k4,4n ${gff} > ${params.build}_sorted.gff
+  bgzip ${params.build}_sorted.gff
+  tabix -p gff ${params.build}_sorted.gff.gz
+  """
 }
 
 
@@ -394,41 +429,37 @@ workflow longRna {
     sample_ch
 
   main:
-    if (params.local) {
-      sam =  minimapMapping(params.reference, sample_ch)
-    } else {
-      sample = downloadSRA(sample_ch)
-      .splitFastq( by : params.splitChunk, file:true )  
-      sam =  minimapMapping(params.reference, sample)
-    }
-       
-    sortedsam = sortSam(sam)
-    samSet = sortedsam.groupTuple(sort: true)
 
-    mergeSam = mergeSams(samSet)
-    cleanSam = transcriptClean(mergeSam.sam,params.reference, mergeSam.sampleID)
+  sam =  minimapMapping(params.fasta, sample_ch)
 
-    database = initiateDatabase(params.referenceAnnotation, params.annotationName, params.build)
+  sortedsam = sortSam(sam)
+  samSet = sortedsam.groupTuple()
 
-    labelReads = talonLabelReads(cleanSam, params.reference, mergeSam.sampleID)
-    
-    samfiles = labelReads.samFiles.collect()
-    samplesNames = labelReads.sample_base.collect()
-    config = generateConfig(samplesNames, params.build, params.platform, samfiles) 
+  mergeSam = mergeSams(samSet)
+  cleanSam = transcriptClean(mergeSam, params.fasta)
 
-    annotation = annotator(config.config_file, params.database, params.build, database.db_name)
+  bam(cleanSam)
+  
+  initDatabase = initiateDatabase(params.gtf, params.annotationName, params.build)
 
-    namesFromAnnotation = sampleList(annotation.tsv_results)
-    talonSummary = talonSummarize(params.database, annotation.tsv_results)
+  labelReads = talonLabelReads(cleanSam, params.fasta)
 
-    filtered = talonFilterTranscripts(params.database, namesFromAnnotation, params.annotationName, params.maxFracA, params.minCount, params.minDatasets) 
+  config = generateConfig(labelReads, params.build, params.platform)
 
-    abundanceNoFilter = transcriptAbundanceNoFilter(params.database, params.annotationName, params.build, annotation.tsv_results)
-    abundanceFilter =  transcriptAbundance(params.database, filtered, params.annotationName, params.build, annotation.tsv_results)
+  annotation = annotator(config.collectFile(), initDatabase, params.build)
 
-    gtf = createGtf(annotation.tsv_results, params.database, params.annotationName, params.build)
-    subsetCount = extractBysample(abundanceNoFilter, abundanceFilter )
-    makeGff = convertGtfToGff(gtf)
-    index = indexGff(makeGff)
+  namesFromAnnotation = sampleList(annotation.results)
+
+  filtered = talonFilterTranscripts(annotation.database, namesFromAnnotation, params.annotationName, params.maxFracA, params.minCount, params.minDatasets)
+
+  abundanceNoFilter = transcriptAbundanceNoFilter(annotation.database, params.annotationName, params.build, annotation.results)
+  abundanceFilter =  transcriptAbundance(annotation.database, filtered, params.annotationName, params.build, annotation.results)
+
+  gtf = createGtf(annotation.results, annotation.database, params.annotationName, params.build)
+  subsetCount = extractBysample(abundanceNoFilter, abundanceFilter )
+  makeGff = convertGtfToGff(gtf)
+  index = indexGff(makeGff)
 
 }
+
+
