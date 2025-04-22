@@ -344,7 +344,6 @@ process createGtf {
   publishDir "${params.results}/Gtf", mode: 'copy'
 
   input:
-    path(annotOut)
     path(database)
     val(annotationName)
     val(build)
@@ -353,7 +352,13 @@ process createGtf {
     path("*results*")
 
   script:
-    template 'talonGtf.bash'    
+  """
+  talon_create_GTF --db ${database} \
+    --observed \
+    -a ${annotationName} \
+    --build ${build} \
+    --o ${build}_results
+  """
 }
 
 /*
