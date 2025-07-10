@@ -460,7 +460,7 @@ workflow longRna {
   abundanceNoFilter = transcriptAbundanceNoFilter(annotation.database, params.annotationName, params.build, annotation.results)
   abundanceFilter =  transcriptAbundance(annotation.database, filtered, params.annotationName, params.build, annotation.results)
 
-  gtf = createGtf(annotation.results, annotation.database, params.annotationName, params.build)
+  gtf = createGtf(annotation.database, params.annotationName, params.build)
   subsetCount = extractBysample(abundanceNoFilter, abundanceFilter )
   makeGff = convertGtfToGff(gtf)
   index = indexGff(makeGff)
