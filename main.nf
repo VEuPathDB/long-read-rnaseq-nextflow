@@ -57,7 +57,7 @@ sampleRows = Channel.fromPath(params.input + "/" + params.samplesheetFileName)
   .splitCsv( skip:1)
 
 sample_ch = sampleRows.map { row ->
-  fileName = file(params.input + "/" + row[1]);
+  fileName = file(row[1]);
   return [ [id: row[0] ], fileName ]
 }.map {
   return ([it[0], it[1].splitFastq(by : params.splitChunk, file:true )])
