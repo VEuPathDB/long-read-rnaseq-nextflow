@@ -336,8 +336,6 @@ process transcriptAbundanceNoFilter{
 /*
 Generate an annotation file (Gtf) based on the gene model identified by talon
 */
-
-
 process createGtf {
   container = 'veupathdb/longreadrnaseq:1.0.0'
 
@@ -429,25 +427,48 @@ process indexGff {
 }
 
 
+/*
+Rewrite the fasta file with a clean defline
+*/
+process createGtf {
+  container = 'veupathdb/longreadrnaseq:1.0.0'
+
+  input:
+    path(fasta)
+
+  output:
+    path("cleanedGenomic.fasta")
+
+  script:
+  """
+  perl -e 'while(<>){chomp; if(/(^>\S+)/){print \$1 . "\n"}else {print \$_ . "\n";}}' $fasta >cleanedGenomic.fasta
+  """
+}
+
+
+
 workflow longRna {
   take: 
     sample_ch
 
   main:
 
-  sam =  minimapMapping(params.fasta, sample_ch)
+
+  cleanFasta = cleanFastaDefline(params.fasta)
+  
+  sam =  minimapMapping(cleanFasta, sample_ch)
 
   sortedsam = sortSam(sam)
   samSet = sortedsam.groupTuple()
 
   mergeSam = mergeSams(samSet)
-  cleanSam = transcriptClean(mergeSam, params.fasta)
+  cleanSam = transcriptClean(mergeSam, cleanFasta)
 
   bam(cleanSam)
   
   initDatabase = initiateDatabase(params.gtf, params.annotationName, params.build)
 
-  labelReads = talonLabelReads(cleanSam, params.fasta)
+  labelReads = talonLabelReads(cleanSam, cleanFasta)
 
   config = generateConfig(labelReads, params.build, params.platform)
 
