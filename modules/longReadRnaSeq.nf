@@ -430,7 +430,7 @@ process indexGff {
 /*
 Rewrite the fasta file with a clean defline
 */
-process createGtf {
+process cleanFastaDefline {
   container = 'veupathdb/longreadrnaseq:1.0.0'
 
   input:
@@ -441,7 +441,7 @@ process createGtf {
 
   script:
   """
-  perl -e 'while(<>){chomp; if(/(^>\S+)/){print \$1 . "\n"}else {print \$_ . "\n";}}' $fasta >cleanedGenomic.fasta
+  perl -e 'while(<>){chomp; if(/(^>\\S+)/){print \$1 . "\\n";}else {print \$_ . "\\n";}}' $fasta > cleanedGenomic.fasta
   """
 }
 
