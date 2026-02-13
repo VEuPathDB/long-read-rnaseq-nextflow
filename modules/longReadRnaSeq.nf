@@ -14,7 +14,7 @@ The out put is a sam file
 */
 
 process minimapMapping{
-  container = 'staphb/minimap2:2.28'
+  container 'staphb/minimap2:2.28'
     
   input:
   path(reference)
@@ -38,7 +38,7 @@ Output a coordinate sorted sam file.
 */
 
 process sortSam {
-  container = 'quay.io/biocontainers/samtools:1.20--h50ea8bc_0'
+  container 'quay.io/biocontainers/samtools:1.20--h50ea8bc_0'
 
   input:
   tuple val(meta), path(sam)
@@ -62,7 +62,7 @@ Output is bam file of merge sam files.
 */
 
 process mergeSams {
-  container = 'quay.io/biocontainers/samtools:1.20--h50ea8bc_0'
+  container 'quay.io/biocontainers/samtools:1.20--h50ea8bc_0'
 
   input:
   tuple val(meta), path("*.sam")  
@@ -79,7 +79,7 @@ process mergeSams {
 
 
 process bam {
-  container = 'quay.io/biocontainers/samtools:1.20--h50ea8bc_0'
+  container 'quay.io/biocontainers/samtools:1.20--h50ea8bc_0'
 
   publishDir "${params.results}/bam", pattern: "*.bam*",  mode: 'copy'
   
@@ -109,7 +109,7 @@ Output is sam file with corrected non-canonical junctions
 */
 
 process transcriptClean {
-  container = 'veupathdb/longreadrnaseq:1.0.0'
+  container 'veupathdb/longreadrnaseq:1.0.0'
 
   input:
   tuple val(meta), path(sam)
@@ -132,7 +132,7 @@ This process initialise the TALON database using the current available annotatio
 
 */
 process initiateDatabase {
-  container = 'veupathdb/longreadrnaseq:1.0.0'
+  container 'veupathdb/longreadrnaseq:1.0.0'
 
   input:
   path(annotation)
@@ -155,7 +155,7 @@ process initiateDatabase {
 This process label the reads with potential priming sites
 */
 process talonLabelReads {
-  container = 'veupathdb/longreadrnaseq:1.0.0'
+  container 'veupathdb/longreadrnaseq:1.0.0'
 
   input:
   tuple val(meta), path(sam)
@@ -180,7 +180,7 @@ This process generate the TALON configuration file
 */
 
 process generateConfig {
-    container = 'veupathdb/longreadrnaseq:1.0.0'
+    container 'veupathdb/longreadrnaseq:1.0.0'
 
   input:
     tuple val(meta), path(sam)
@@ -203,7 +203,7 @@ This process annotate the transcripts
 */
 
 process annotator {
-  container = 'veupathdb/longreadrnaseq:1.0.0'
+  container 'veupathdb/longreadrnaseq:1.0.0'
     
   input:
   path(configFile)
@@ -230,7 +230,7 @@ This process generate the sample sample list from the annotation database
 
 */
 process sampleList {
-  container = 'veupathdb/longreadrnaseq:1.0.0'
+  container 'veupathdb/longreadrnaseq:1.0.0'
 
   input:
     path(annotation)
@@ -251,7 +251,7 @@ Apply filter to TALON transcript using these talon default setting maxFracA = 0.
 */
 
 process talonFilterTranscripts {
-  container = 'veupathdb/longreadrnaseq:1.0.0'
+  container 'veupathdb/longreadrnaseq:1.0.0'
 
   input:
     path(database)
@@ -280,7 +280,7 @@ process talonFilterTranscripts {
 Determine transcript abudance for individual transcripts using TALON default filter from the above process and put them a matrix
 */
 process transcriptAbundance{
-  container = 'veupathdb/longreadrnaseq:1.0.0'
+  container 'veupathdb/longreadrnaseq:1.0.0'
 
   publishDir "${params.results}/counts", mode: 'copy'
 
@@ -310,7 +310,7 @@ Filter transcript abudance for individual transcripts without a filter and put t
 */
 
 process transcriptAbundanceNoFilter{
-  container = 'veupathdb/longreadrnaseq:1.0.0'
+  container 'veupathdb/longreadrnaseq:1.0.0'
 
   publishDir "${params.results}/counts", mode: 'copy'
 
@@ -337,7 +337,7 @@ process transcriptAbundanceNoFilter{
 Generate an annotation file (Gtf) based on the gene model identified by talon
 */
 process createGtf {
-  container = 'veupathdb/longreadrnaseq:1.0.0'
+  container 'veupathdb/longreadrnaseq:1.0.0'
 
   publishDir "${params.results}/Gtf", mode: 'copy'
 
@@ -363,7 +363,7 @@ process createGtf {
 Extract results from individual samples from the expression matrix genetated by TALON
 */
 process extractBysample{
-  container = 'veupathdb/longreadrnaseq:1.0.0'
+  container 'veupathdb/longreadrnaseq:1.0.0'
     
   publishDir "${params.results}/counts", mode: 'copy'
 
@@ -385,7 +385,7 @@ Convert the TALON generated Gtf into Gff
 */
 
 process convertGtfToGff {
-  container = 'quay.io/biocontainers/agat:0.8.0--pl5262hdfd78af_0'
+  container 'quay.io/biocontainers/agat:0.8.0--pl5262hdfd78af_0'
 
   publishDir "${params.results}/Gtf", mode: 'copy'
 
@@ -408,7 +408,7 @@ Process indix the final gtf file
 
 */
 process indexGff {
-  container = 'biocontainers/tabix:v1.9-11-deb_cv1'
+  container 'biocontainers/tabix:v1.9-11-deb_cv1'
 
   publishDir "${params.results}/Gtf", mode: 'copy'
 
@@ -431,7 +431,7 @@ process indexGff {
 Rewrite the fasta file with a clean defline
 */
 process cleanFastaDefline {
-  container = 'veupathdb/longreadrnaseq:1.0.0'
+  container 'veupathdb/longreadrnaseq:1.0.0'
 
   input:
     path(fasta)
