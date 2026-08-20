@@ -1,139 +1,57 @@
-# <p align=center>Long Read RNA-Seq transcript annotation Workflow</p>
-This workflow identify and quantify know and novel genes/transcript isoforms using long read RNA-seq data. The [TALON](https://github.com/mortazavilab/TALON) pipeline is used for the transcript identification and quantification. The long read are mapped to a reference genome using minimap2 and the sam file sorted using Samtools. After sorting [TranscriptClean](https://github.com/mortazavilab/TranscriptClean) is used to fix noncanonical junctions. 
-TALON is then used the label the read to identify potential internal priming. A database of existing gene models are then generated based on the annotation to identify existing gene model and potential novel models. After identification of gene models, TALON quantify the expression level of each gene transcript. More details on the talon method can be found [here](https://www.biorxiv.org/content/10.1101/672931v2.full)
+# long-read-rnaseq-nextflow
 
+Nextflow pipeline that identifies and quantifies known and novel gene/transcript isoforms from long-read RNA-seq data for VEuPathDB genome resources.
 
-**<p align=left>Get Started</p>**
-To run the work the following dependencies need to be install
-* Docker
-> `https://docs.docker.com/engine/install/`
-* Nextflow
-> `curl https://get.nextflow.io | bash`
+## Overview
 
-* The pull the git hub repo using the following command
-> `git pull https://github.com/VEuPathDB/bulk-rnaseq-nextflow.git`
+Long reads are split into chunks and mapped to a reference genome with `minimap2`, coordinate-sorted and merged per sample with `samtools`, then corrected for noncanonical splice junctions with `TranscriptClean`. [TALON](https://github.com/mortazavilab/TALON) labels reads for potential internal priming, initializes a transcript database from the existing reference annotation, and annotates each sample's reads against it to identify known and novel gene models. TALON's abundance tools then quantify each transcript both with and without TALON's default noise filters (`maxFracA`, `minCount`, `minDatasets`), and the resulting gene models are written out as a GTF, converted to a sorted/indexed GFF3, and split back out per sample. Background on the TALON method is available [here](https://www.biorxiv.org/content/10.1101/672931v2.full).
 
-* Alternatively the workflow can be run directly using nextflow which pull down the repo. 
-> `nextflow run VEuPathDB/bulk-rnaseq-nextflow -with-trace -c  <config_file> -r main`
+This pipeline produces the transcript models and per-sample/aggregate expression matrices used to annotate and display long-read RNA-seq datasets on VEuPathDB genome sites.
 
+## Requirements
 
-<br />
+- Nextflow
+- Docker (default) or Singularity/Apptainer — see `conf/docker.config`, `conf/singularity.config`
+- Processes run in `staphb/minimap2`, `quay.io/biocontainers/samtools`, `veupathdb/longreadrnaseq` (TALON, TranscriptClean, and pipeline helper scripts), `quay.io/biocontainers/agat` (GTF-to-GFF3 conversion), and `biocontainers/tabix` (GFF indexing)
 
+## Usage
 
-**<p align=left>Input Data</p>**
-Example of input data can be found in the `data` directory. The following files are require
-* Long read Fastq files or a csv file containing the list SRA accession numbers to be analyzed.
-* A reference for the organism being analyzed
-* A nextflow config file `nextflow.config`.
-
-**<p align=left>Input Data</p>**
-The following output files are generated and can be found in the result folder specify in the config file
-* Un-filtered transcripts counts
-* Filtered transcripts counts
-* GTF annotation file generated from un-filters annotations
-* GTF file generated from filtered annotation. 
-* A bam file for each sample analyzed
-
-
-***<p align=center>Nextflow workflow diagram</p>***  
-```mermaid
-flowchart TD
-    p0((Channel.fromPath))
-    p1([splitFastq])
-    p2(( ))
-    p3[longRna:minimapMapping]
-    p4[longRna:sortSam]
-    p5([groupTuple])
-    p6[longRna:mergeSams]
-    p8(( ))
-    p9[longRna:transcriptClean]
-    p10(( ))
-    p11(( ))
-    p12(( ))
-    p13[longRna:initiateDatabase]
-    p15(( ))
-    p16[longRna:talonLabelReads]
-    p17([collect])
-    p18([collect])
-    p19(( ))
-    p20(( ))
-    p21[longRna:generateConfig]
-    p23(( ))
-    p24(( ))
-    p25[longRna:annotator]
-    p27[longRna:sampleList]
-    p28(( ))
-    p29[longRna:talonSummarize]
-    p30(( ))
-    p31(( ))
-    p32(( ))
-    p33[longRna:talonFilterTranscripts]
-    p34(( ))
-    p35(( ))
-    p36(( ))
-    p37[longRna:transcriptAbundanceNoFilter]
-    p38(( ))
-    p39(( ))
-    p40(( ))
-    p41[longRna:transcriptAbundance]
-    p42(( ))
-    p43(( ))
-    p44(( ))
-    p45[longRna:createGtf]
-    p46[longRna:extractBysample]
-    p47(( ))
-    p48[longRna:convertGtfToGff]
-    p49[longRna:indexGff]
-    p50(( ))
-    p0 --> p1
-    p1 -->|sample_ch| p3
-    p2 -->|reference| p3
-    p3 --> p4
-    p4 --> p5
-    p5 -->|samSet| p6
-    p6 --> p9
-    p6 -->|sampleID| p9
-    p8 -->|reference| p9
-    p9 --> p16
-    p10 -->|annotation| p13
-    p11 -->|annot_name| p13
-    p12 -->|build| p13
-    p13 -->|annot_name| p25
-    p15 -->|reference| p16
-    p6 -->|sample_base| p16
-    p16 --> p17
-    p16 --> p18
-    p17 -->|samfiles| p21
-    p18 -->|samplesNames| p21
-    p19 -->|build| p21
-    p20 -->|seqPlatform| p21
-    p21 --> p25
-    p23 -->|database| p25
-    p24 -->|build| p25
-    p25 --> p27
-    p27 --> p33
-    p28 -->|database| p29
-    p25 -->|results| p29
-    p29 --> p30
-    p31 -->|database| p33
-    p32 -->|annot_name| p33
-    p33 --> p41
-    p34 -->|database| p37
-    p35 -->|annot_name| p37
-    p36 -->|build| p37
-    p25 -->|results*| p37
-    p37 --> p46
-    p38 -->|database| p41
-    p39 -->|annot_name| p41
-    p40 -->|build| p41
-    p25 -->|results*| p41
-    p41 --> p46
-    p25 -->|annotOut| p45
-    p42 -->|database| p45
-    p43 -->|annot_name| p45
-    p44 -->|build| p45
-    p45 --> p48
-    p46 --> p47
-    p48 --> p49
-    p49 --> p50
 ```
+nextflow run VEuPathDB/long-read-rnaseq-nextflow -r main \
+  --input /path/to/fastq_dir \
+  --samplesheetFileName samplesheet.csv \
+  --fasta /path/to/reference.fa \
+  --gtf /path/to/reference.gtf \
+  --build MyOrganismDB \
+  --annotationName MyOrganismDB \
+  --platform Nanopore \
+  --results /path/to/results \
+  -resume -C site.config
+```
+
+`samplesheet.csv` (found via `input`/`samplesheetFileName`) is a CSV with a header row followed by one line per sample: sample ID in the first column, path to that sample's FASTQ file in the second.
+
+The pipeline has a single entry point (the default, unnamed `workflow`); there are no named `-entry` targets.
+
+## Key parameters
+
+- `input` — directory containing the input FASTQ files and the sample sheet
+- `samplesheetFileName` — name of the sample sheet CSV within `input` (sample ID, FASTQ path)
+- `fasta` — reference genome FASTA (cleaned of extra defline text before mapping)
+- `gtf` — reference annotation GTF, used to initialize the TALON database
+- `build` — genome build/assembly name recorded in the TALON database and used to name output files
+- `annotationName` — annotation name recorded in the TALON database
+- `platform` — sequencing platform label recorded in the TALON config (e.g. `Nanopore`)
+- `splitChunk` — number of reads per FASTQ chunk when splitting each sample for parallel mapping
+- `maxFracA` / `minCount` / `minDatasets` — TALON transcript filter thresholds (fraction of A's at the 3' end, minimum read count, minimum number of datasets a transcript must appear in) applied when producing the filtered abundance/whitelist
+- `results` — output directory for BAMs, GTF/GFF, and count files
+
+## Output
+
+Written under `results`:
+
+- `bam/` — coordinate-sorted, indexed BAM per sample
+- `Gtf/` — TALON-generated GTF of observed gene models, its AGAT-converted GFF3, and a sorted, `bgzip`-compressed, `tabix`-indexed version of that GFF3
+- `counts/` — unfiltered and TALON-filtered transcript abundance matrices, plus per-sample abundance files split from the aggregate matrices
+
+Filtered outputs apply TALON's `maxFracA`/`minCount`/`minDatasets` thresholds to distinguish high-confidence transcripts from potential internal-priming or low-support artifacts; unfiltered outputs retain the full set of observed transcripts.
